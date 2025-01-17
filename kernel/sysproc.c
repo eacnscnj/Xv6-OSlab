@@ -8,7 +8,7 @@
 #include "proc.h"
 #include "syscall.h"
 #include "kalloc.c"
-
+#include "sysinfo.h"
 uint64
 sys_exit(void)
 {
@@ -116,7 +116,7 @@ sys_sysinfo(void)
   struct sysinfo *info;
   uint64 addr;
   struct sysproc *p = myproc();
-
+  
   if(argaddr(0, &addr) < 0)
     return -1;
 
