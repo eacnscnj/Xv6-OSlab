@@ -90,7 +90,7 @@ getMemSize(void)
   r=kmem.freelist;
   while(r) {
     memsize += PGSIZE;
-    kmem.freelist = r->next;
+    r = r->next;
   }
   release(&kmem.lock);
   return memsize;
