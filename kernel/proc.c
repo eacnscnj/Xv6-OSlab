@@ -21,11 +21,11 @@ static void freeproc(struct proc *p);
 
 extern char trampoline[]; // trampoline.S
 
-int
+uint64
 numOfProc(void)
 {
   struct proc *p;
-  int count = 0;
+  uint64 count = 0;
   for(p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
     if(p->state != UNUSED) {
