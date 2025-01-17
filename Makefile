@@ -150,7 +150,9 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 	$U/_trace\
+	$U/_sysinfo\
 	$U/_sysinfotest\
+	##使用sysinfotest时注释sysinfo，但能够通过make grade，不知为何
 
 
 ifeq ($(LAB),trap)
