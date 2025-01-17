@@ -102,6 +102,7 @@ allocproc(void)
       release(&p->lock);
     }
   }
+  p->tracemask = 0;
   return 0;
 
 found:
@@ -276,6 +277,7 @@ fork(void)
   np->sz = p->sz;
 
   np->parent = p;
+  np->tracemask = p->tracemask;
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
