@@ -116,6 +116,16 @@ exec(char *path, char **argv)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 
+  //=============================
+   // 复制新的kernel page并刷新TLB
+  if (pagecopy(p->pagetable, p->kpagetable, 0, p->sz) != 0) {
+    goto bad;
+  }
+  // 因为load进来了新的program, 刷新一下内存映射
+  w_satp(MAKE_SATP(p->kpagetable));
+  sfence_vma();
+  //=============================
+
   if(p->pid == 1){
     vmprint(p->pagetable);
   }
