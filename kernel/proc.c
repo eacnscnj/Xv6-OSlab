@@ -18,7 +18,6 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void wakeup1(struct proc *chan);
 static void freeproc(struct proc *p);
-
 extern char trampoline[]; // trampoline.S
 
 // initialize the proc table at boot time.
@@ -121,7 +120,7 @@ found:
     return 0;
   }
 
-   // Allocate the per-process kernel page table
+  // Allocate the per-process kernel page table
   p->kpagetable = ukvminit();
   if(p->kpagetable == 0) {
     freeproc(p);
@@ -143,6 +142,8 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  // Zero initializes the tracemask for a new process
+  p->tracemask = 0;
   return p;
 }
 
@@ -243,9 +244,8 @@ userinit(void)
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
-  //===================
+
   pagecopy(p->pagetable, p->kpagetable, 0, p->sz);
-  //===================
 
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;      // user program counter
@@ -269,18 +269,15 @@ growproc(int n)
 
   sz = p->sz;
   if(n > 0){
-    // 内核页的虚拟地址不能溢出PLIC
     if (sz + n > PLIC || (sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
       return -1;
     }
     if (pagecopy(p->pagetable, p->kpagetable, p->sz, sz) != 0) {
-      // 增量同步[old size, new size]
       return -1;
     }
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
     if (sz != p->sz) {
-      // 缩量同步[new size, old size]
       uvmunmap(p->kpagetable, PGROUNDUP(sz), (PGROUNDUP(p->sz) - PGROUNDUP(sz)) / PGSIZE, 0);
     }
   }
@@ -303,6 +300,9 @@ fork(void)
     return -1;
   }
 
+  // inherit parent's trace mask
+  np->tracemask = p->tracemask;
+
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
@@ -310,6 +310,7 @@ fork(void)
     return -1;
   }
   np->sz = p->sz;
+
   if (pagecopy(np->pagetable, np->kpagetable, 0, np->sz) != 0) {
     freeproc(np);
     release(&np->lock);
@@ -513,14 +514,12 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
-
-        w_satp(MAKE_SATP(p->kpagetable));
-        sfence_vma();
+        ukvminithard(p->kpagetable);
         swtch(&c->context, &p->context);
-        kvminithart();
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
+        kvminithart();
         c->proc = 0;
 
         found = 1;
@@ -740,4 +739,19 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+// Count how many processes are not in the state of UNUSED
+uint64
+count_free_proc(void) {
+  struct proc *p;
+  uint64 count = 0;
+  for(p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if(p->state != UNUSED) {
+      count += 1;
+    }
+    release(&p->lock);
+  }
+  return count;
 }

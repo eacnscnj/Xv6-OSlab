@@ -1,0 +1,7 @@
+why change the position of "#include "spinlock.h"" 
+and "#include "proc.h"" make the error 
+"kernel/proc.h:87:19: error: field 'lock' has incomplete type
+   87 |   struct spinlock lock;
+      |                   ^~~~
+make[1]: *** [<builtin>: kernel/vm.o] Error 1
+make[1]: Leaving directory "
