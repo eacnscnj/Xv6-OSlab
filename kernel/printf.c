@@ -132,3 +132,19 @@ printfinit(void)
   initlock(&pr.lock, "pr");
   pr.locking = 1;
 }
+
+void
+backtrace(void){
+  printf("backtrace:\n");
+  uint64 fpoint = r_fp();
+  uint64 pageup = PGROUNDUP(fpoint);
+  uint64 pagedown = PGROUNDDOWN(fpoint);
+  while(fpoint >= pagedown && fpoint <= pageup){
+    uint64 addr = *(uint64*)(fpoint - 8);
+    uint64 pit = *(uint64*)(fpoint - 16);
+    if(addr>0x80000000)
+      printf("%p\n",addr);
+    
+    fpoint = pit;
+  }
+}

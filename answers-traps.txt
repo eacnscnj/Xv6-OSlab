@@ -1,0 +1,7 @@
+a0 - a7 contain arguments to functions
+inline function，nowhere
+  0x628
+  0x38
+ He110 World
+some trash in rigister a2
+
