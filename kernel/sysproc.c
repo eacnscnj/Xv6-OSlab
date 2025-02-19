@@ -46,9 +46,15 @@ sys_sbrk(void)
 
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
-  if(growproc(n) < 0)
-    return -1;
+  addr = myproc()->sz;//增长起始点是当前进程的sz，因为地址从零开始
+  if(addr + n <= 0||addr + n >= MAXVA)
+    return addr;
+  myproc()->sz += n;
+  //if(growproc(n) < 0)
+  //  return -1;
+  if(n < 0){
+    uvmdealloc(myproc()->pagetable, addr ,myproc()->sz);
+  }
   return addr;
 }
 
